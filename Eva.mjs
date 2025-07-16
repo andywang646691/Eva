@@ -21,21 +21,41 @@ export class Eva {
     if (expression[0] === "*") {
       return this.eval(expression[1], environment) * this.eval(expression[2], environment);
     }
+    if (expression[0] === "<") {
+      return this.eval(expression[1], environment) < this.eval(expression[2], environment);
+    }
+    if (expression[0] === ">") {
+      return this.eval(expression[1], environment) > this.eval(expression[2], environment);
+    }
+    if (expression[0] === "if") {
+      const [_, condition, consequence, alternative] = expression;
+      return this.eval(this.eval(condition, environment) ? consequence : alternative, environment);
+    }
+    if (expression[0] === "while") {
+      const [_, condition, body] = expression;
+      let result;
+      while (this.eval(condition, environment)) {
+        result = this.eval(body, environment);
+      }
+      return result;
+    }
     if (expression[0] === "var") {
       const [_, name, value] = expression;
       return environment.define(name, this.eval(value, environment));
     }
     if (expression[0] === "set") {
       const [_, name, value] = expression;
-      return environment.set(name, this.eval(value, environment));
+      const env = environment.resolve(name);
+      return env.set(name, this.eval(value, env));
     }
     if (isIdentifier(expression)) {
       return environment.lookup(expression);
     }
     if (expression[0] === "begin") {
-      return this._evalBlock(expression.slice(1), environment);
+      const env = new Environment(environment, environment);
+      return this._evalBlock(expression.slice(1), env);
     }
-    throw "Unimplemented";
+    throw `Unimplemented: ${JSON.stringify(expression)}`;
   }
   _evalBlock(expressions, environment) {
     let result;
@@ -59,8 +79,9 @@ function isIdentifier(expression) {
 }
 
 export class Environment {
-  constructor(env = {}) {
+  constructor(env = {}, parent = null) {
     this.variables = new Map(Object.entries(env));
+    this.parent = parent;
   }
 
   define(name, value) {
@@ -79,6 +100,18 @@ export class Environment {
   lookup(name) {
     if (this.variables.has(name)) {
       return this.variables.get(name);
+    }
+    if (this.parent) {
+      return this.parent.lookup(name);
+    }
+    throw `Undefined variable: ${name}`;
+  }
+  resolve(name) {
+    if (this.variables.has(name)) {
+      return this;
+    }
+    if (this.parent) {
+      return this.parent.resolve(name);
     }
     throw `Undefined variable: ${name}`;
   }
