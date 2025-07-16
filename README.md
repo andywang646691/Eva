@@ -2,9 +2,9 @@
 
 A simple Lisp interpreter.
 
-## Tests
+## Run tests
 
 ```bash
-node --test __tests__/eva.mjs
+node __tests__/eva.mjs
 ```
 

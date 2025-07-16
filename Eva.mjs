@@ -113,6 +113,7 @@ export class Environment {
     if (this.parent) {
       return this.parent.resolve(name);
     }
+    console.trace();
     throw `Undefined variable: ${name}`;
   }
 }
