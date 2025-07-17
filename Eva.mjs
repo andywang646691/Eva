@@ -5,8 +5,64 @@
 
 
 export class Eva {
-  constructor(env = {}) {
-    this.globalEnv = new Environment(env);
+  constructor() {
+    this.globalEnv = new Environment({
+      null: null,
+
+      true: true,
+      false: false,
+
+      VERSION: '0.1',
+
+      // Operators:
+
+      '+'(op1, op2) {
+        return op1 + op2;
+      },
+
+      '*'(op1, op2) {
+        return op1 * op2;
+      },
+
+      '-'(op1, op2 = null) {
+        if (op2 == null) {
+          return -op1;
+        }
+        return op1 - op2;
+      },
+
+      '/'(op1, op2) {
+        return op1 / op2;
+      },
+
+      // Comparison:
+
+      '>'(op1, op2) {
+        return op1 > op2;
+      },
+
+      '<'(op1, op2) {
+        return op1 < op2;
+      },
+
+      '>='(op1, op2) {
+        return op1 >= op2;
+      },
+
+      '<='(op1, op2) {
+        return op1 <= op2;
+      },
+
+      '='(op1, op2) {
+        return op1 === op2;
+      },
+
+      // Console output:
+
+      print(...args) {
+        console.log(...args);
+      },
+    });
   }
   eval(expression, environment = this.globalEnv) {
     if (isNumber(expression)) {
@@ -14,18 +70,6 @@ export class Eva {
     }
     if (isString(expression)) {
       return expression.slice(1, -1);
-    }
-    if (expression[0] === "+") {
-      return this.eval(expression[1], environment) + this.eval(expression[2], environment);
-    }
-    if (expression[0] === "*") {
-      return this.eval(expression[1], environment) * this.eval(expression[2], environment);
-    }
-    if (expression[0] === "<") {
-      return this.eval(expression[1], environment) < this.eval(expression[2], environment);
-    }
-    if (expression[0] === ">") {
-      return this.eval(expression[1], environment) > this.eval(expression[2], environment);
     }
     if (expression[0] === "if") {
       const [_, condition, consequence, alternative] = expression;
@@ -55,10 +99,46 @@ export class Eva {
       const env = new Environment(environment, environment);
       return this._evalBlock(expression.slice(1), env);
     }
-    throw `Unimplemented: ${JSON.stringify(expression)}`;
+    if (expression[0] === "def") {
+      const [_, name, params, body] = expression;
+      const fnDeclaration = {
+        name,
+        params,
+        body,
+        env: environment
+      }
+      environment.define(name, fnDeclaration);
+      return fnDeclaration;
+    }
+    if (expression[0] === "lambda") {
+      const [_, params, body] = expression;
+      return {
+        params,
+        body,
+        env: environment
+      }
+    }
+    const fn = this.eval(expression[0], environment);
+    const args = expression.slice(1)
+    if (typeof fn === "function") {
+      return fn(...args.map(e => this.eval(e, environment)));
+    }
+    const activationRecord = fn.params.reduce((acc, param, index) => {
+      acc[param] = this.eval(args[index], environment);
+      return acc;
+    }, {});
+    const result = this._evalBody(fn.body, new Environment(activationRecord, fn.env));
+    return result;
+  }
+  _evalBody(body, environment) {
+    if (body[0] === 'begin') {
+      return this._evalBlock(body.slice(1), environment);
+    }
+    return this.eval(body, environment);
   }
   _evalBlock(expressions, environment) {
     let result;
+
     for (const expression of expressions) {
       result = this.eval(expression, environment);
     }
@@ -75,7 +155,7 @@ function isString(expression) {
 }
 
 function isIdentifier(expression) {
-  return typeof expression === "string" && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(expression);
+  return typeof expression === "string" && /^[a-zA-Z_<>=+*][a-zA-Z0-9_<>=+]*$/.test(expression);
 }
 
 export class Environment {
@@ -104,6 +184,7 @@ export class Environment {
     if (this.parent) {
       return this.parent.lookup(name);
     }
+    console.trace();
     throw `Undefined variable: ${name}`;
   }
   resolve(name) {

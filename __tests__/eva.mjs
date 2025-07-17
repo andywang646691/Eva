@@ -47,6 +47,69 @@ test(eva, `(begin (var x 1) (var y 2) (if (> x 10) (set x 3) (set y 4)) y)`, 4);
 test(eva, `(begin (var x 1) (var y 10) (while (< x y) (begin (set x (+ x 1)))) x)`, 10);
 
 
+/**
+ * functions
+ */
+
+test(eva, `
+  (
+    begin
+      (def square (x) (* x x))
+      (square 2)
+  )
+  `, 4)
+
+test(eva, `
+  (
+    begin
+      (def calc (x y) (begin (var z 1) (+ x (+ y z))))
+      (calc 1 2)
+  )
+  `, 4)
+
+test(eva, `
+  (
+    begin
+      (var z 3)
+      (def calc (x y) (begin (+ (* x y) z)))
+      (calc 2 4)
+  )
+  `, 11)
+
+
+  // closure
+test(eva, `
+  (
+    begin
+      (var x 1)
+      (def calc (x y) (begin (def inner (z) (+ (* x y) z))))
+      (var fn (calc 2 4))
+      (fn 1)
+  )
+  `, 9)
+
+
+// lambda
+test(eva, `
+  (
+    begin
+      (def onClick (callback)
+        (begin
+          (var x 1)
+          (var y 2)
+          (callback x y)
+        )
+      )
+      (onClick (lambda (x y) (+ x y)))
+  )
+  `, 3)
+
+  // IIFE
+  test(eva, `
+    (
+      (lambda (x) (+ x 1)) 2
+    )
+    `, 3)
 
 
 
