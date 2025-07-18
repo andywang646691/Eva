@@ -75,6 +75,24 @@ export class Eva {
       const [_, condition, consequence, alternative] = expression;
       return this.eval(this.eval(condition, environment) ? consequence : alternative, environment);
     }
+    if (expression[0] === "switch") {
+      const [_, ...cases] = expression;
+      for (const [condition, consequence] of cases) {
+        if (this.eval(condition, environment) || condition === "else") {
+          return this.eval(consequence, environment);
+        }
+      }
+    }
+    if (expression[0] === "for") {
+      const [_, init, condition, update, body] = expression;
+      this.eval(init, environment);
+      let result;
+      while (this.eval(condition, environment)) {
+        result = this.eval(body, environment);
+        this.eval(update, environment);
+      }
+      return result;
+    }
     if (expression[0] === "while") {
       const [_, condition, body] = expression;
       let result;
@@ -92,7 +110,7 @@ export class Eva {
       const env = environment.resolve(name);
       return env.set(name, this.eval(value, env));
     }
-    if (isIdentifier(expression)) {
+    if (isIdentifier(expression) && !isKeyword(expression)) {
       return environment.lookup(expression);
     }
     if (expression[0] === "begin") {
@@ -156,6 +174,10 @@ function isString(expression) {
 
 function isIdentifier(expression) {
   return typeof expression === "string" && /^[a-zA-Z_<>=+*][a-zA-Z0-9_<>=+]*$/.test(expression);
+}
+
+function isKeyword(expression) {
+  return typeof expression === "string" && ["if", "switch", "for", "while", "var", "set", "def", "lambda"].includes(expression);
 }
 
 export class Environment {

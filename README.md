@@ -22,7 +22,7 @@ node __tests__/eva.mjs
 (def add (x y) (+ x y))
 ```
 
-### control flow (if, while)
+### control flow (if, while, switch, for)
 
 ### lambda
 

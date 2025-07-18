@@ -112,7 +112,40 @@ test(eva, `
     `, 3)
 
 
+  // syntax sugar (switch / for)
+/**
+ * (switch
+ *   (<case1> <consequence1>)
+ *   (<case2> <consequence2>)
+ *   ...
+ *   (<else> <alternate>)
+ * )
+ */
+
+test(eva, `
+  (
+    begin
+      (var x 1)
+      (switch
+        ((= x 1) (set x 2))
+        ((= x 2) (set x 3))
+        (else (set x 4))
+      )
+      x
+    )
+    `, 2)
 
 
+/**
+ * (for (<init> <condition> <update> <body>)
+ */
+test(eva, `
+  (
+    begin
+      (var x 0)
+      (for (var i 0) (< i 10) (set i (+ i 1)) (set x (+ x i)))
+      x
+    )
+    `, 45)
 
 console.log("All tests passed");
